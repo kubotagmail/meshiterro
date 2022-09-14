@@ -1,0 +1,69 @@
+<div>
+  <%= image_tag @post_image.get_image %>
+  <p>ショップ名：<%= @post_image.shop_name %></p>
+  <p>説明：<%= @post_image.caption %></p>
+
+
+   <!-- 1. post_image.userで、投稿画像に紐づいたユーザーの情報(投稿したユーザーの情報)を取得できる
+       2. 「.user」の部分でUserモデルを使用しているため、Userモデルに記述しているget_profile_imageメソッドが使えるようになる
+       3. 結果、post_image.user.get_profile_imageと記述することで、投稿画像に紐づいたユーザーのプロフィール画像を表示できる
+-->
+  <p>投稿ユーザー画像：<%= image_tag @post_image.user.get_profile_image(100,100) %></p>
+  <!--@post_imageはpost_image_controllerで定義されている-->
+
+
+
+  <p>ユーザーネーム：<%= @post_image.user.name %></p>
+  <p>投稿日：<%= @post_image.created_at.strftime('%Y/%m/%d') %></p>
+  <% if @post_image.user == current_user %>
+    <%= link_to "削除", post_image_path(@post_image), method: :delete %>
+  <% end %>
+  
+  
+  <!--投稿画像に付けられた「いいね」に、自分（ログインしているユーザ）が含まれているかをfavorited_by?メソッドで判定しています。
+  ちなみにfavorited_by?メソッドは、PostImageモデルで実装したメソッドです。
+「含まれるとき／含まれないとき」で、表示と機能を分けています。 また、リンクのaタグのメソッドを、条件によって変えています。-->
+  <% if @post_image.favorited_by?(current_user) %>
+    <p>
+      <%= link_to post_image_favorites_path(@post_image), method: :delete do %>
+        ♥<%= @post_image.favorites.count %> いいね
+      <% end %>
+    </p>
+    <% else %>
+    <p>
+      <%= link_to post_image_favorites_path(@post_image), method: :post do %>
+        ♡<%= @post_image.favorites.count %> いいね
+      <% end %>
+    </p>
+  <% end %>
+</div>
+
+
+<!--投稿画像の詳細画面で、コメントを投稿できるようにします。 また、投稿画像へのコメント、コメント数も表示させます。-->
+<div>
+  <p>コメント件数：<%= @post_image.post_comments.count %></p>
+  <% @post_image.post_comments.each do |post_comment| %>
+    <p><%= image_tag post_comment.user.get_profile_image(100,100) %></p>
+    <%= post_comment.user.name %>
+    <%= post_comment.created_at.strftime('%Y/%m/%d') %><%= post_comment.comment %>
+
+    <!--削除ボタンを表示するための記述。-->
+    <% if post_comment.user == current_user %>
+      <%= link_to "削除", post_image_post_comment_path(post_comment.post_image, post_comment), method: :delete %>
+    <% end %>
+
+  <% end %>
+</div>
+
+
+
+<div>
+  <%= form_with model: [@post_image, @post_comment] do |f| %>
+    <%= f.text_area :comment, rows: '5', placeholder: "コメントをここに" %>
+    <%= f.submit "送信する" %>
+  <% end %>
+</div>
+<!--form_withに対して、[@post_image,@post_comment]のように、配列でインスタンス変数を2つ指定している点に注意してください。
+コメントは、post_imageに結びついたpost_commentであるため、2つ用意する必要があります。
+また、post_commentをcreateするためのリクエストは、ルーティングもネスト（親子関係）しているため、上記2つの情報が必要になります。-->
+
